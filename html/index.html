@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>LOVE Stack Interpreter</title>
+  <style>
+    /* --- Layout & Basics --- */
+    *{box-sizing:border-box}
+    body{margin:0;height:100vh;display:flex;font-family:sans-serif}
+    #editor{flex:1;padding:8px}
+    #program{width:100%;height:100%;resize:none;border:1px solid #888;border-radius:6px;padding:6px;font-family:monospace;font-size:14px}
+
+    /* --- Side Panel --- */
+    #side{flex:1;padding:8px;border-left:1px solid #aaa;display:flex;flex-direction:column;gap:8px}
+    #controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    #panels{flex:1;display:flex;flex-direction:column;gap:8px}
+    .pane{flex:1;display:flex;flex-direction:column;border:1px solid #ccc;border-radius:6px;background:#f9f9f9}
+    .pane h3{margin:4px 8px;font-size:1rem}
+    .pane-body{flex:1;overflow:auto;padding:8px}
+
+    /* --- Stack View --- */
+    #stackView{display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap}
+    .cell{min-width:48px;padding:4px 6px;border:1px solid #333;border-radius:4px;background:#fff;font-family:monospace;text-align:center;user-select:none;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+
+    /* --- Output --- */
+    #output{font-family:monospace;white-space:pre-wrap}
+
+    /* --- Help --- */
+    #help ul{margin:0;padding-left:20px;font-family:monospace}
+    #help li{margin-bottom:2px}
+  </style>
+</head>
+<body>
+  <!-- PROGRAM EDITOR -->
+  <div id="editor">
+    <textarea id="program" placeholder="Enter LOVE program here">
+LLOO[ROOOOR-]E[ROOOOOOOOR-]EV
+    </textarea>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div id="side">
+    <!-- controls -->
+    <div id="controls">
+      <label>Delay (ms): <input type="number" id="delay" value="100" min="0" step="50"></label>
+      <button id="runBtn">Run</button>
+      <button id="stopBtn" disabled>Stop</button>
+    </div>
+
+    <!-- panes -->
+    <div id="panels">
+      <!-- Stack pane -->
+      <div class="pane" id="stackPane">
+        <h3>Stack</h3>
+        <div class="pane-body" id="stackView"></div>
+      </div>
+      <!-- Output pane -->
+      <div class="pane" id="outputPane">
+        <h3>Output</h3>
+        <div class="pane-body" id="output"></div>
+      </div>
+      <!-- Help pane -->
+      <div class="pane" id="helpPane">
+        <h3>Commands</h3>
+        <div class="pane-body" id="help">
+          <ul>
+            <li>L – push 0</li>
+            <li>O – increment top</li>
+            <li>V – pop &amp; print as ASCII</li>
+            <li>E – pop &amp; discard</li>
+            <li>C – copy top (duplicate)</li>
+            <li>R – swap top two</li>
+            <li>- – decrement top</li>
+            <li>[ … ] – while loop (Brainf*** style)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const programEl=document.getElementById('program');
+  const delayEl  =document.getElementById('delay');
+  const runBtn   =document.getElementById('runBtn');
+  const stopBtn  =document.getElementById('stopBtn');
+  const stackView=document.getElementById('stackView');
+  const outputEl =document.getElementById('output');
+
+  let tokens=[],ptr=0,stack=[],timer=null;
+
+  // util
+  const tokenize=code=>code.replace(/[\s\n\t]/g,'').split('');
+  const renderStack=()=>{
+    stackView.innerHTML=stack.map(v=>`<div class="cell">${v}</div>`).join('');
+    stackView.scrollLeft=stackView.scrollWidth;
+  };
+  const printOutput=ch=>{outputEl.textContent+=ch+' ';};
+
+  // execution step
+  function step(){
+    if(ptr>=tokens.length){stop();return;}
+    const t=tokens[ptr];
+    switch(t){
+      case 'L': stack.push(0); break;
+      case 'O': if(stack.length) stack[stack.length-1]++; break;
+      case 'V': if(stack.length){const d=stack.pop(); printOutput(String.fromCharCode(d));} break;
+      case 'E': stack.pop(); break;
+      case 'C': if(stack.length) stack.push(stack[stack.length-1]); break;
+      case 'R': if(stack.length>1){const a=stack.pop(),b=stack.pop(); stack.push(a,b);} break;
+      case '-': if(stack.length) stack[stack.length-1]--; break;
+      case '[':
+        if(stack[stack.length-1]===0){
+          let depth=1;
+          while(depth&&++ptr<tokens.length){
+            if(tokens[ptr]=='[')depth++; else if(tokens[ptr]==']')depth--;}
+        }
+        break;
+      case ']':
+        if(stack[stack.length-1]!==0){
+          let depth=1;
+          while(depth&&--ptr>=0){
+            if(tokens[ptr]==']')depth++; else if(tokens[ptr]=='[')depth--;}
+        }
+        break;
+      default:
+    }
+    ptr++;
+    renderStack();
+  }
+
+  // controls
+  function run(){
+    tokens=tokenize(programEl.value);
+    ptr=0;stack=[];outputEl.textContent='';
+    renderStack();
+    const delay=parseInt(delayEl.value,10)||0;
+    runBtn.disabled=true; stopBtn.disabled=false;
+    timer=setInterval(step,delay);
+  }
+  function stop(){
+    if(timer){clearInterval(timer);timer=null;}
+    runBtn.disabled=false; stopBtn.disabled=true;
+  }
+  runBtn.addEventListener('click',run);
+  stopBtn.addEventListener('click',stop);
+})();
+</script>
+</body>
+</html>
+
