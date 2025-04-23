@@ -1,46 +1,7 @@
 # prg = "L"+"O"*100+"V"
 # prg = "LLLOO[ROOOOOR-]E[ROOOOOOOR-]EV"
-prg = """
-L
-L
-LOO
-[
-    ROOOO
-    R-
-]
-E
-[
-    ROOOOOOOO
-    R-
-]
-E
-C
-LOO
-[
-    ROOOOOO
-    R-
-]
-E
-C
-V
-R
-OOOOO
-C
-LOO
-[
-    ROOOOO
-    R-
-]
-EV
-R
-LOO
-[
-    ROOOOO
-    R-
-]
-EV
-V
-"""
+prg = "".join(["L"+"O"*i+"V" for i in [72, 101, 108, 108, 111]])
+
 
 def parser(prg: str) -> list[str]:
     prg = prg.replace("\n", "")
